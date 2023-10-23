@@ -41,7 +41,13 @@ class FiksRegister:
         self.integration_id = integration_id
         self.integration_password = integration_password
 
-    def _post_request(self, token: str, url_endpoint: str, json_body: dict) -> dict:
+    def _send_request(
+        self,
+        request_method: Literal["GET", "POST"],
+        token: str,
+        url_endpoint: str,
+        json_body: dict = None,
+    ) -> dict:
         """Post request and return response from API"""
         request_url = f"{self.env_url}{url_endpoint}"
         auth_headers = {
@@ -49,7 +55,8 @@ class FiksRegister:
             "IntegrasjonId": self.integration_id,
             "IntegrasjonPassord": self.integration_password,
         }
-        response = requests.post(
+        response = requests.request(
+            method=request_method,
             url=request_url,
             headers=auth_headers,
             json=json_body,
@@ -65,7 +72,8 @@ class FiksRegister:
 
 
 class SummertSkattegrunnlag(FiksRegister):
-    """Fiks register summert skattegrunnlag service v2. Documentation:
+    """Functoins for the Fiks register summert skattegrunnlag service v2.
+    Documentation:
     https://editor.swagger.io/?url=https://developers.fiks.ks.no/api/register-summert-skattegrunnlag-api-v2.json
     """
 
@@ -97,16 +105,16 @@ class SummertSkattegrunnlag(FiksRegister):
         applicants: list[Applicant],
         access_token: str,
     ) -> dict:
-        """Get summert skattegrunnlag for applicant(s).
-        API-documentation:
-        https://editor.swagger.io/?url=https://developers.fiks.ks.no/api/register-summert-skattegrunnlag-api-v2.json
-        """
+        """Get summert skattegrunnlag for single applicant or multiple applicants."""
         endpoint = f"/register/api/v2/ks/{self.role_id}/summertskattegrunnlag"
         body = self._summert_skattegrunnlag_create_request_body(
             income_year, calculation_type, applicants
         )
-        response = self._post_request(
-            token=access_token, url_endpoint=endpoint, json_body=body
+        response = self._send_request(
+            request_method="POST",
+            token=access_token,
+            url_endpoint=endpoint,
+            json_body=body,
         )
         return response
 
@@ -125,3 +133,28 @@ class SummertSkattegrunnlag(FiksRegister):
             "beregningstype": calculation_type,
         }
         return body
+
+
+class Folkeregister(FiksRegister):
+    """Functions for the Fiks folkeregister API that mirrors Skatteetaten services.
+    Fiks folkeregister API Documentation:
+    https://developers.fiks.ks.no/tjenester/register/folkeregister/
+    """
+
+    def __init_subclass__(cls) -> None:
+        return super().__init_subclass__()
+
+    def get_person_data_by_personal_id(
+        self,
+        person_id: str,
+        access_token: str,
+    ) -> dict:
+        """Get data for a single person using the persons personal ID (fnr).
+        Skatteetaten API documentation:
+        https://app.swaggerhub.com/apis/Skatteetaten_FREG/Offentlig-med-hjemmel/1.5#/Offentlig%20med%20hjemmel/hentSisteVersjonAvPerson
+        """
+        endpoint = f"/folkeregister/api/v1/{self.role_id}/v1/personer/{person_id}"
+        response = self._send_request(
+            request_method="GET", token=access_token, url_endpoint=endpoint
+        )
+        return response

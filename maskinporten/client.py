@@ -19,7 +19,7 @@ class Maskinporten:
         key_id: Optional[str] = None,
         consumer_org: Optional[str] = None,
     ) -> None:
-        """Init"""
+        """Init og direktekonfigurasjon av Maskinporten-klient"""
         self.env = None
         self.client_id = None
         self.scope = None
