@@ -4,7 +4,7 @@ import jwt
 import requests
 from cryptography.hazmat.primitives import serialization
 
-API_TIMEOUT = 10
+API_TIMEOUT = 30
 
 
 class Maskinporten:
@@ -26,6 +26,7 @@ class Maskinporten:
         self.private_key_path = None
         self.key_id = None
         self.consumer_org = None
+        self.env_url = None
         self.configure_maskinporten_client(
             client_id=client_id,
             scope=scope,
@@ -45,6 +46,10 @@ class Maskinporten:
         consumer_org: Optional[str] = None,
     ) -> Union[str, None]:
         """Konfigurerer Maskinporten-klient"""
+        if env == "prod":
+            self.env_url = ""
+        elif env == "test":
+            self.env_url = "test."
         self.env = env
         self.client_id = client_id
         self.scope = scope
@@ -60,7 +65,7 @@ class Maskinporten:
     def _get_response(self) -> dict:
         """Returnerer fullstendig respons fra Maskinporten"""
         jwt_grant = self._generate_jwt_grant(pem=self.private_key_path, kid=self.key_id)
-        endpoint = f"https://{self.env}.maskinporten.no/token"
+        endpoint = f"https://{self.env_url}maskinporten.no/token"
         header = {"Content-Type": "application/x-www-form-urlencoded"}
         body = {
             "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
@@ -83,7 +88,7 @@ class Maskinporten:
         key = serialization.load_pem_private_key(private_key.encode(), password=None)
         jwt_grant = jwt.encode(
             payload={
-                "aud": f"https://{self.env}.maskinporten.no/",
+                "aud": f"https://{self.env_url}maskinporten.no/",
                 "iss": self.client_id,
                 "scope": self.scope,
                 "iat": datetime.now(tz=timezone.utc),
