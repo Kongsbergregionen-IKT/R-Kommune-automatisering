@@ -1,7 +1,7 @@
 from typing import Optional, Literal, TypedDict
 import requests
 
-API_TIMEOUT = 10
+API_TIMEOUT = 30
 
 
 class FiksRegister:
